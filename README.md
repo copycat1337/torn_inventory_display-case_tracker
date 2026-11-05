@@ -6,7 +6,7 @@ The script combines your **inventory and display case quantities**, highlights m
 
 No external backend, no subscriptions, and no third-party services. Everything is handled locally in your browser.
 
-▶️ **[Watch the Full Tutorial]([YOUR_VIDEO_URL](https://youtu.be/qaSJkIwHGWU))**
+▶️ **[Watch the Full Tutorial](https://youtu.be/qaSJkIwHGWU)**
 
 ## ✨ Features
 
