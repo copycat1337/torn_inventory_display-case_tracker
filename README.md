@@ -6,6 +6,8 @@ The script combines your **inventory and display case quantities**, highlights m
 
 No external backend, no subscriptions, and no third-party services. Everything is handled locally in your browser.
 
+▶️ **[Watch the Full Tutorial]([YOUR_VIDEO_URL](https://youtu.be/qaSJkIwHGWU))**
+
 ## ✨ Features
 
 ### 🎨 Color-Coded Marketplace Highlights
