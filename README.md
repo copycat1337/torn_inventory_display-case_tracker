@@ -49,6 +49,16 @@ Keep track of items you want to purchase, even if you don't currently own them.
 - Receive the same green pulsing price highlights.
 - Track potential purchases without adding them to your inventory.
 
+### 📋 Crime & OC Items
+
+A dedicated tab for tracking items associated with Crimes and Organized Crimes (OCs).
+
+- Displays items required or associated with Crimes and OCs.
+- Identifies items you currently own and items you are missing.
+- Helps identify items filtered or selected for specific Crime and OC activities.
+- Provides a convenient overview of items you may need to purchase.
+- Makes it easier to prepare for upcoming Crimes and Organized Crimes.
+
 ### 📊 Items Management Panel
 
 A dedicated panel provides an overview of your tracked items.
@@ -61,6 +71,7 @@ Features include:
 - Per-item threshold configuration.
 - Price target management.
 - Watchlist management.
+- Crime & OC item tracking.
 
 ### 🖥️ Customizable Interface
 
@@ -91,6 +102,7 @@ Features include:
 7. Click **🏛️ Display Case** to synchronize your display case.
 8. Open **⚙️ Settings** to configure your color thresholds and price targets.
 9. Optionally, use **⭐ Watchlist** to track items you want to purchase.
+10. Check the **📋 Crime & OC Items** tab to review missing and tracked Crime and OC items.
 
 You're ready to go!
 
@@ -105,10 +117,13 @@ The script is designed to minimize API consumption and stays comfortably below T
 | Action | API Requests | Description |
 |:---|:---:|:---|
 | 🔄 Inventory refresh | ~25–30 | Retrieves inventory data across item categories, including fallback sweeps. |
-| 🏛️ Display Case sync | 0 | Reads the currently loaded Display Case page using API. |
+| 🏛️ Display Case sync | 0 | Reads the currently loaded Display Case page. |
 | Marketplace highlighting | 0 | Uses locally cached inventory and display case data. |
 | 💰 Price target alerts | 0 | Uses locally stored price targets. |
 | ⭐ Watchlist | 0 | Uses locally stored watchlist entries. |
+| 📋 Crime & OC Items | 0* | Uses locally available tracking data. |
+
+*Crime and OC tracking API usage depends on the data source and implementation.*
 
 ### Refresh Cooldown
 
@@ -131,7 +146,7 @@ All user data is stored locally in your browser using Tampermonkey's `GM_setValu
 |:---|:---|
 | `torn_api_key` | Your Torn API key. |
 | `torn_inventory_only_snapshot` | Inventory snapshot retrieved from the API. |
-| `torn_displaycase_only_snapshot` | Display Case snapshot retrieved through page scraping. |
+| `torn_displaycase_only_snapshot` | Display Case snapshot retrieved through page data. |
 | `torn_inv_thresholds` | Individual item color thresholds. |
 | `torn_inv_default_threshold` | Global default color thresholds. |
 | `torn_inv_price_targets` | Individual maximum buying prices. |
@@ -174,7 +189,7 @@ Use a dedicated **read-only API key** with the minimum permissions required:
 | Script Type | Tampermonkey Userscript |
 | API | Official Torn API |
 | Inventory Data | Torn API |
-| Display Case Data | Torn API |
+| Display Case Data | Torn API / page data |
 | Local Storage | Tampermonkey `GM_setValue` |
 | Marketplace Detection | DOM Monitoring |
 | External Backend | Not required |
@@ -188,6 +203,7 @@ Use a dedicated **read-only API key** with the minimum permissions required:
 - Display Case synchronization requires visiting the Display Case page.
 - Marketplace highlighting relies on cached data and does not continuously query the API.
 - Price targets and watchlist entries are configured independently of ownership thresholds.
+- Crime & OC item tracking provides a separate overview of items associated with these activities.
 
 ---
 
