@@ -1,0 +1,1093 @@
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d16">
+  <meta name="description" content="Torn Marketplace Inventory Highlighter — a Tampermonkey userscript for Torn City featuring inventory tracking, display case tracking, price alerts, watchlists, and Crime & OC item tracking.">
+  <title>Marketplace Inventory Highlighter | c0pyc4t Scrips</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080d16;
+      --panel: #111a28;
+      --panel-2: #0d1522;
+      --line: #24344a;
+      --text: #e8f0fb;
+      --muted: #9aabc1;
+      --blue: #19a7ff;
+      --blue-2: #0878d1;
+      --green: #39d98a;
+      --yellow: #f5c542;
+      --red: #ff5c68;
+      --radius: 14px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse at 50% -15%, #102b49 0, var(--bg) 48rem);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { color: #75caff; }
+
+    .wrap {
+      width: min(1120px, calc(100% - 36px));
+      margin: auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgb(8 13 22 / 92%);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      color: var(--text);
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -.04em;
+    }
+
+    .brand span, .accent { color: var(--blue); }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    nav a {
+      color: #c6d3e4;
+      font-size: .92rem;
+    }
+
+    .hero {
+      padding: 76px 0 64px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(110deg, rgb(10 34 59 / 55%), transparent 65%);
+    }
+
+    .eyebrow {
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: .75rem;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(2.5rem, 7vw, 4.8rem);
+      line-height: 1.05;
+      letter-spacing: -.06em;
+    }
+
+    .hero p {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.3rem);
+      margin: 0 0 25px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: #172337;
+      font-weight: 650;
+    }
+
+    .btn.primary {
+      background: var(--blue-2);
+      border-color: var(--blue);
+      color: white;
+    }
+
+    main { padding: 30px 0 60px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      grid-column: span 6;
+      min-width: 0;
+      padding: 24px;
+      background: linear-gradient(145deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 35px rgb(0 0 0 / 13%);
+    }
+
+    .card.full { grid-column: 1 / -1; }
+    .card.third { grid-column: span 4; }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1.25rem;
+      letter-spacing: -.02em;
+    }
+
+    h2::before {
+      content: "// ";
+      color: var(--blue);
+      font-family: ui-monospace, monospace;
+    }
+
+    h3 {
+      margin: 20px 0 8px;
+      font-size: 1.05rem;
+    }
+
+    p { margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+
+    ul, ol { padding-left: 1.35rem; }
+    li { padding: 3px 0; }
+
+    .details {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 8px 14px;
+      margin: 16px 0 0;
+    }
+
+    .details dt { color: var(--muted); }
+    .details dd { margin: 0; overflow-wrap: anywhere; }
+
+    ol.install { margin: 14px 0 0; }
+    ol.install li { padding: 4px 0 4px 5px; }
+
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    pre {
+      overflow-x: auto;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #080e18;
+      color: #c9e8ff;
+    }
+
+    .shots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .shots a {
+      display: block;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #080e18;
+    }
+
+    .shots img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      transition: transform .2s ease;
+    }
+
+    .shots a:hover img { transform: scale(1.035); }
+
+    .video {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #080e18;
+    }
+
+    .video iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: .92rem;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--blue);
+      font-weight: 700;
+      background: #0b1421;
+    }
+
+    .color-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .red { background: var(--red); }
+    .yellow { background: var(--yellow); }
+    .green { background: var(--green); }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .feature {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #0b1421;
+    }
+
+    .feature strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+
+    .feature p {
+      color: var(--muted);
+      font-size: .92rem;
+      margin: 0;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      background: #070b12;
+      padding: 24px 0;
+      color: var(--muted);
+    }
+
+    .foot {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .foot strong { color: var(--text); }
+
+    @media (max-width: 760px) {
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 0;
+      }
+
+      nav { gap: 14px; }
+      .hero { padding: 54px 0 46px; }
+      .card, .card.third { grid-column: 1 / -1; }
+      .shots, .feature-list { grid-template-columns: 1fr; }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .details { grid-template-columns: 110px 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#home">c0pyc4t <span>Scrips</span></a>
+
+      <nav aria-label="Main navigation">
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="#screenshots">Screenshots</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" id="home">
+    <div class="wrap">
+      <div class="eyebrow">Torn City scripts &amp; tools</div>
+
+      <h1>Marketplace <span class="accent">Inventory Highlighter</span></h1>
+
+      <p>
+        A lightweight Tampermonkey userscript that makes Torn City
+        marketplace browsing easier. Track your inventory and display
+        case, highlight item quantities, identify buying opportunities,
+        and keep an eye on Crime and Organized Crime items.
+      </p>
+
+      <div class="actions">
+        <a class="btn primary"
+           href="https://github.com/copycat1337"
+           target="_blank" rel="noopener">
+          View on GitHub
+        </a>
+
+        <a class="btn"
+           href="#install">
+          Installation guide
+        </a>
+
+        <a class="btn"
+           href="https://youtu.be/qaSJkIwHGWU"
+           target="_blank" rel="noopener">
+          ▶ Watch tutorial
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div class="grid">
+
+      <!-- ABOUT -->
+
+      <section class="card" id="about">
+        <h2>About this project</h2>
+
+        <p>
+          <strong>Torn Marketplace Inventory Highlighter</strong>
+          is a browser userscript designed to improve the Torn City
+          marketplace experience.
+        </p>
+
+        <p>
+          It combines your inventory and display case quantities
+          to calculate how many of each item you own. Marketplace
+          items are automatically highlighted according to your
+          configurable quantity thresholds.
+        </p>
+
+        <p>
+          You can also configure maximum buying prices, maintain
+          a personal watchlist, and track items associated with
+          Crimes and Organized Crimes.
+        </p>
+
+        <p class="muted">
+          No external backend, subscriptions, or third-party
+          services are required. Data and settings are stored
+          locally in your browser.
+        </p>
+      </section>
+
+      <!-- CONTACT -->
+
+      <section class="card" id="contact">
+        <h2>Contact &amp; support</h2>
+
+        <p>
+          Questions, suggestions, or found a bug?
+          Contact the project author or open an issue on GitHub.
+        </p>
+
+        <p>
+          Email:
+          <a href="mailto:copycat1337x@protonmail.com">
+            copycat1337x@protonmail.com
+          </a>
+        </p>
+
+        <p>
+          GitHub:
+          <a href="https://github.com/copycat1337"
+             target="_blank" rel="noopener">
+            github.com/copycat1337
+          </a>
+        </p>
+      </section>
+
+      <!-- SCRIPT INFORMATION -->
+
+      <section class="card third">
+        <h2>Script information</h2>
+
+        <dl class="details">
+          <dt>Script</dt>
+          <dd>Marketplace Inventory Highlighter</dd>
+
+          <dt>Author</dt>
+          <dd>c0pyc4t [4039125]</dd>
+
+          <dt>Game</dt>
+          <dd>Torn City</dd>
+
+          <dt>Platform</dt>
+          <dd>Tampermonkey</dd>
+
+          <dt>Type</dt>
+          <dd>Browser userscript</dd>
+
+          <dt>Storage</dt>
+          <dd>Local browser storage</dd>
+
+          <dt>Backend</dt>
+          <dd>Not required</dd>
+        </dl>
+      </section>
+
+      <!-- INSTALLATION -->
+
+      <section class="card third" id="install">
+        <h2>Installation</h2>
+
+        <ol class="install">
+          <li>
+            Install a userscript manager such as
+            <a href="https://www.tampermonkey.net/"
+               target="_blank" rel="noopener">Tampermonkey</a>.
+          </li>
+
+          <li>
+            Install the Marketplace Inventory Highlighter
+            userscript from this repository.
+          </li>
+
+          <li>
+            Confirm the installation in your userscript manager.
+          </li>
+
+          <li>
+            Open Torn City and locate the inventory highlighter panel.
+          </li>
+
+          <li>
+            Click <strong>🔑 Key</strong> and enter your
+            read-only Torn API key.
+          </li>
+
+          <li>
+            Click <strong>🔄 Inventory</strong> to retrieve your inventory.
+          </li>
+
+          <li>
+            Visit your
+            <a href="https://www.torn.com/displaycase.php"
+               target="_blank" rel="noopener">Display Case</a>
+            and synchronize it using
+            <strong>🏛️ Display Case</strong>.
+          </li>
+
+          <li>
+            Configure your thresholds and price targets in
+            <strong>⚙️ Settings</strong>.
+          </li>
+        </ol>
+      </section>
+
+      <!-- REQUIREMENTS -->
+
+      <section class="card third">
+        <h2>Requirements &amp; notes</h2>
+
+        <ul>
+          <li>Torn City account.</li>
+          <li>Tampermonkey or compatible userscript manager.</li>
+          <li>Read-only Torn API key.</li>
+          <li>Internet connection to access Torn.</li>
+          <li>No Node.js server or external database.</li>
+        </ul>
+
+        <p class="muted">
+          Inventory and display case snapshots are saved locally.
+          Refresh them when your item quantities change.
+        </p>
+      </section>
+
+      <!-- FEATURES -->
+
+      <section class="card full" id="features">
+        <h2>Features</h2>
+
+        <p class="muted">
+          Everything you need to monitor item ownership and
+          identify marketplace buying opportunities.
+        </p>
+
+        <div class="feature-list">
+
+          <div class="feature">
+            <strong>🎨 Color-Coded Marketplace Highlights</strong>
+            <p>
+              Automatically highlights marketplace and player
+              bazaar items according to your current ownership.
+              Configure global or individual item thresholds.
+            </p>
+          </div>
+
+          <div class="feature">
+            <strong>📦 Inventory + Display Case Tracking</strong>
+            <p>
+              Combines your inventory and display case quantities
+              to calculate total item ownership. Hover over
+              highlighted items to see the breakdown.
+            </p>
+          </div>
+
+          <div class="feature">
+            <strong>💰 Price Target Alerts</strong>
+            <p>
+              Set maximum buying prices for individual items.
+              Prices at or below your targets pulse bright green
+              to identify potential bargains.
+            </p>
+          </div>
+
+          <div class="feature">
+            <strong>⭐ Personal Watchlist</strong>
+            <p>
+              Track items you want to purchase even when you
+              currently own none. Configure buying targets and
+              receive the same price alerts.
+            </p>
+          </div>
+
+          <div class="feature">
+            <strong>📋 Crime &amp; OC Items</strong>
+            <p>
+              A dedicated tab for Crime and Organized Crime items.
+              Identify missing items and review items filtered
+              or associated with Crimes and OCs.
+            </p>
+          </div>
+
+          <div class="feature">
+            <strong>📊 Items Management Panel</strong>
+            <p>
+              Search, filter, and sort tracked items. Manage
+              inventory quantities, display case quantities,
+              thresholds, price targets, and your watchlist.
+            </p>
+          </div>
+
+          <div class="feature">
+            <strong>🖥️ Customizable Interface</strong>
+            <p>
+              Drag, collapse, hide, or show the panel.
+              Your panel position, visibility, and settings
+              are saved between browser sessions.
+            </p>
+          </div>
+
+          <div class="feature">
+            <strong>🔒 Local Data Storage</strong>
+            <p>
+              Your API key, snapshots, watchlist, and settings
+              are stored locally using Tampermonkey's
+              GM_setValue storage API.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- COLOR HIGHLIGHTS -->
+
+      <section class="card">
+        <h2>Color-coded quantities</h2>
+
+        <p>
+          Item names are highlighted according to how many
+          you currently own.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Color</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td><span class="color-dot red"></span> Red</td>
+              <td>Low quantity</td>
+            </tr>
+
+            <tr>
+              <td><span class="color-dot yellow"></span> Yellow</td>
+              <td>Medium quantity</td>
+            </tr>
+
+            <tr>
+              <td><span class="color-dot green"></span> Green</td>
+              <td>High quantity</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="muted">
+          Thresholds can be configured globally or individually
+          for each item.
+        </p>
+      </section>
+
+      <!-- CRIME AND OC -->
+
+      <section class="card">
+        <h2>Crime &amp; OC tracking</h2>
+
+        <p>
+          Keep track of items needed for Crimes and Organized
+          Crimes without having to manually compare everything
+          against your inventory.
+        </p>
+
+        <ul>
+          <li>Dedicated Crime &amp; OC Items tab.</li>
+          <li>Identify items you are missing.</li>
+          <li>View items filtered or associated with Crimes and OCs.</li>
+          <li>Review tracked items alongside your ownership information.</li>
+          <li>Identify items you may need to purchase.</li>
+        </ul>
+      </section>
+
+      <!-- API USAGE -->
+
+      <section class="card full">
+        <h2>API usage</h2>
+
+        <p>
+          The script is designed to minimize API consumption.
+          Marketplace highlighting, price alerts, and watchlist
+          functionality rely on locally cached data rather than
+          continuously requesting information from Torn.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>API requests</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>🔄 Inventory refresh</td>
+              <td>~25–30</td>
+              <td>Retrieves inventory data across item categories.</td>
+            </tr>
+
+            <tr>
+              <td>🏛️ Display Case sync</td>
+              <td>0</td>
+              <td>Reads the currently loaded Display Case page.</td>
+            </tr>
+
+            <tr>
+              <td>Marketplace highlighting</td>
+              <td>0</td>
+              <td>Uses locally cached ownership data.</td>
+            </tr>
+
+            <tr>
+              <td>💰 Price target alerts</td>
+              <td>0</td>
+              <td>Uses locally stored price targets.</td>
+            </tr>
+
+            <tr>
+              <td>⭐ Watchlist</td>
+              <td>0</td>
+              <td>Uses locally stored watchlist entries.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Refresh cooldown</h3>
+
+        <ul>
+          <li>Inventory refresh is manual.</li>
+          <li>A 60-second cooldown prevents excessive API requests.</li>
+          <li>A full refresh uses approximately 25–30 requests.</li>
+          <li>Even refreshing every 60 seconds stays below Torn's 100 requests per minute limit.</li>
+        </ul>
+
+        <p class="muted">
+          Normal usage is significantly lower because browsing
+          the marketplace does not generate additional API requests.
+        </p>
+      </section>
+
+      <!-- PRIVACY -->
+
+      <section class="card full">
+        <h2>Privacy &amp; security</h2>
+
+        <p>
+          Privacy is a priority. The userscript is designed to
+          operate entirely within your browser.
+        </p>
+
+        <ul>
+          <li>
+            <strong>API key stays local:</strong>
+            Your Torn API key is stored in Tampermonkey's local storage.
+          </li>
+
+          <li>
+            <strong>Official API:</strong>
+            API requests are sent to Torn's official API.
+          </li>
+
+          <li>
+            <strong>No third-party servers:</strong>
+            No external backend or cloud storage is involved.
+          </li>
+
+          <li>
+            <strong>No analytics:</strong>
+            No tracking, telemetry, or analytics services.
+          </li>
+
+          <li>
+            <strong>Local configuration:</strong>
+            Item quantities, thresholds, watchlists, and price targets
+            remain on your machine.
+          </li>
+
+          <li>
+            <strong>Restricted network access:</strong>
+            The userscript uses the
+            <code>@connect api.torn.com</code>
+            metadata directive to restrict permitted API connections.
+          </li>
+        </ul>
+
+        <h3>Recommended API permissions</h3>
+
+        <p>
+          Use a dedicated <strong>read-only API key</strong>
+          with the minimum permissions required.
+        </p>
+
+        <ul>
+          <li>User Inventory — required for inventory retrieval.</li>
+          <li>Display Case — optional, as the script reads display case quantities from the page.</li>
+        </ul>
+
+        <p><strong>Never use a full-access API key for this script.</strong></p>
+      </section>
+
+      <!-- HOW IT WORKS -->
+
+      <section class="card full">
+        <h2>How to use</h2>
+
+        <h3>1. Synchronize your inventory</h3>
+        <p>
+          Enter your API key and use the Inventory button to
+          retrieve your current item quantities.
+        </p>
+
+        <h3>2. Synchronize your Display Case</h3>
+        <p>
+          Visit your Display Case and use the Display Case
+          synchronization button to update its snapshot.
+        </p>
+
+        <h3>3. Browse the marketplace</h3>
+        <p>
+          Item names are automatically highlighted according
+          to your combined inventory and display case quantities.
+          Hover over highlighted items to see the ownership breakdown.
+        </p>
+
+        <h3>4. Configure buying targets</h3>
+        <p>
+          Set maximum prices for items you want to purchase.
+          Marketplace prices that meet your targets receive
+          a bright green pulsing highlight.
+        </p>
+
+        <h3>5. Manage your watchlist</h3>
+        <p>
+          Add items you want to purchase, even if you currently
+          own zero. Configure their buying targets independently.
+        </p>
+
+        <h3>6. Check Crime &amp; OC Items</h3>
+        <p>
+          Open the dedicated tab to review Crime and OC-related
+          items, identify missing items, and see which items
+          have been filtered or associated with these activities.
+        </p>
+
+        <h3>7. Customize your panel</h3>
+        <p>
+          Drag, collapse, hide, or show the interface.
+          Your preferences and panel position are saved locally.
+        </p>
+      </section>
+
+      <!-- TECHNICAL OVERVIEW -->
+
+      <section class="card full">
+        <h2>Technical overview</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Implementation</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>Platform</td>
+              <td>Torn City</td>
+            </tr>
+
+            <tr>
+              <td>Script type</td>
+              <td>Tampermonkey Userscript</td>
+            </tr>
+
+            <tr>
+              <td>API</td>
+              <td>Official Torn API</td>
+            </tr>
+
+            <tr>
+              <td>Inventory data</td>
+              <td>Torn API</td>
+            </tr>
+
+            <tr>
+              <td>Display Case data</td>
+              <td>Loaded Display Case page</td>
+            </tr>
+
+            <tr>
+              <td>Local storage</td>
+              <td>Tampermonkey GM_setValue</td>
+            </tr>
+
+            <tr>
+              <td>Marketplace detection</td>
+              <td>DOM Monitoring</td>
+            </tr>
+
+            <tr>
+              <td>External backend</td>
+              <td>Not required</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- SCREENSHOTS -->
+
+      <section class="card full" id="screenshots">
+        <h2>Screenshots</h2>
+
+        <p class="muted">
+          Add your Marketplace Inventory Highlighter screenshots
+          to the repository's <code>pictures/</code> directory
+          and update the filenames below.
+        </p>
+
+        <div class="shots">
+
+          <a href="pictures/screenshot-1.png"
+             target="_blank" rel="noopener">
+            <img src="pictures/screenshot-1.png"
+                 alt="Marketplace inventory highlighting"
+                 loading="lazy">
+          </a>
+
+          <a href="pictures/screenshot-2.png"
+             target="_blank" rel="noopener">
+            <img src="pictures/screenshot-2.png"
+                 alt="Inventory management panel"
+                 loading="lazy">
+          </a>
+
+          <a href="pictures/screenshot-3.png"
+             target="_blank" rel="noopener">
+            <img src="pictures/screenshot-3.png"
+                 alt="Marketplace price target alerts"
+                 loading="lazy">
+          </a>
+
+          <a href="pictures/screenshot-4.png"
+             target="_blank" rel="noopener">
+            <img src="pictures/screenshot-4.png"
+                 alt="Crime and OC item tracking"
+                 loading="lazy">
+          </a>
+
+          <a href="pictures/screenshot-5.png"
+             target="_blank" rel="noopener">
+            <img src="pictures/screenshot-5.png"
+                 alt="Personal item watchlist"
+                 loading="lazy">
+          </a>
+
+          <a href="pictures/screenshot-6.png"
+             target="_blank" rel="noopener">
+            <img src="pictures/screenshot-6.png"
+                 alt="Userscript settings"
+                 loading="lazy">
+          </a>
+
+        </div>
+      </section>
+
+      <!-- VIDEO -->
+
+      <section class="card full">
+        <h2>Video tutorial</h2>
+
+        <p class="muted">
+          Watch the full tutorial to see the Marketplace Inventory
+          Highlighter in action, including setup and its main features.
+        </p>
+
+        <div class="video">
+          <iframe
+            src="https://www.youtube-nocookie.com/embed/qaSJkIwHGWU"
+            title="Torn Marketplace Inventory Highlighter Tutorial"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+          </iframe>
+        </div>
+
+        <p class="muted">
+          Video not loading?
+          <a href="https://youtu.be/qaSJkIwHGWU"
+             target="_blank" rel="noopener">
+            Watch on YouTube
+          </a>.
+        </p>
+      </section>
+
+      <!-- CHANGELOG -->
+
+      <section class="card full">
+        <h2>Changelog</h2>
+
+        <ul>
+          <li>
+            <strong>Crime &amp; OC Items:</strong>
+            Added a dedicated tab for reviewing missing and
+            Crime/OC-filtered items.
+          </li>
+
+          <li>
+            <strong>Watchlist:</strong>
+            Track items you want to purchase independently
+            of your current inventory.
+          </li>
+
+          <li>
+            <strong>Price targets:</strong>
+            Identify marketplace prices that meet your
+            configured buying limits.
+          </li>
+
+          <li>
+            <strong>Inventory tracking:</strong>
+            Combine inventory and display case snapshots
+            for more accurate ownership information.
+          </li>
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+
+      <div>
+        <strong>c0pyc4t <span class="accent">Scrips</span></strong>
+        <br>
+        <small>Independent scripts and tools for Torn City.</small>
+      </div>
+
+      <small>
+        Not affiliated with or endorsed by Torn City.
+        © <span id="year">2026</span> c0pyc4t.
+      </small>
+
+      <a href="https://github.com/copycat1337"
+         target="_blank" rel="noopener">
+        GitHub profile ↗
+      </a>
+
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent =
+      new Date().getFullYear();
+  </script>
+
+</body>
+</html>
+```
