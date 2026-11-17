@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Torn Inventory Tracker & Marketplace Highlighter
 // @namespace    http://torn.com/
-// @version      5.1
+// @version      6.1
 // @description  Highlight marketplace item names by owned amount and pulse prices based on custom values
-// @author       YourName
+// @author       c0pyc4t  [4039125]
 // @match        https://www.torn.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -68,6 +68,422 @@
     const BORDER_COLORS = { red: '#ff2222', yellow: '#ffcc00', green: '#22cc22' };
 
     const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
+
+const CRIMES = {
+  sfc:'Search for Cash', bl:'Bootlegging', grf:'Graffiti', sl:'Shoplifting',
+  pp:'Pickpocketing', cs:'Card Skimming', bur:'Burglary', hus:'Hustling',
+  dis:'Disposal', crk:'Cracking', for:'Forgery', scm:'Scamming', ars:'Arson',
+  oc:'Organized Crime'
+};
+const ROLES = { req:'Required', enh:'Enhancer', use:'Consumed', tool:'Tool', unlock:'Unlocks',
+  part:'Rig part', mat:'Material', out:'Forged item', ign:'Igniter',
+  acc:'Accelerant', damp:'Dampener', oc:'OC item' };
+const ROLE_ORDER = ['req','enh','tool','use','unlock','part','ign','acc','damp','mat','oc','out'];
+
+const ITEM_USES = {
+  'Glasses':'sfc.enh',
+  'Metal Detector':'sfc.unlock@Beach',
+  'Cemetery Key':'sfc.unlock@Cemetery',
+  'Lost and Found Office Key':'sfc.unlock@Subway',
+  'Bucket':'sfc.tool@Shore Thing:sand; for.mat@Collection Bucket:single use',
+  'Blank DVD':'bl.use','High-Speed Drive':'bl.enh',
+  'Spray Can':'grf.req:any colour',
+  'Spray Can : White':'for.mat@License Plate:20 uses',
+  'Spray Can : Black':'for.mat@License Plate:50 uses; oc@No Reserve',
+  'Paint Mask':'grf.enh',
+  'Ladder':'grf.tool:extra outcomes; oc@Window of Opportunity',
+  'Wire Cutters':'grf.tool:extra outcomes; oc@Counter Offer, Dish It Out, Window of Opportunity',
+  'Mountain Bike':'sl.enh','Torn City Times':'sl.tool:extra outcomes',
+  'Cut-Throat Razor':'pp.enh; oc@Gone Fission',
+  'Card Skimmer':'cs.req','Spy Camera':'cs.req','Duct Tape':'cs.enh',
+  'Flashlight':'bur.enh:needed for Beach Hut and Lake House',
+  'Jemmy':'bur.tool@Beach Hut, Lake House, Secluded Cabin; oc@Mob Mentality, Bidding War, Stacking the Deck',
+  'Lockpicks':'bur.tool@Manor House; oc@First Aid and Abet, Pet Project, Thou Shalt Not Steal, Best of the Lot, Counter Offer',
+  'Rope':'bur.tool@Mobile Home; dis.tool@Dead Bodies:sink',
+  'Window Breaker':'bur.tool@Bungalow, Cottage, Farmhouse, Luxury Villa',
+  'Skeleton Key':'bur.tool:recommended; for.out; for.tool@Skeleton Key:mould',
+  'Credit Card':'bur.tool@Apartment; for.mat@ID Badge:single use',
+  'Megaphone':'hus.enh','Latex Gloves':'dis.enh',
+  'Shovel':'dis.tool:bury',
+  'Gasoline':'dis.use:burn; ars.acc; oc@Market Forces',
+  'Hydrochloric Acid':'dis.use:dissolve',
+  'Disposable Mask':'dis.tool@Biological Waste',
+  'Wheelbarrow':'dis.tool@Building Debris, Industrial Waste',
+  'Handkerchief':'dis.tool@Firearms:abandon',
+  'Double Cut File':'dis.tool@Firearms; for.tool@Skeleton Key, Police Badge, ATM Key',
+  'Hammer':'for.tool@ATM Key',
+  'Bleach':'dis.tool@Vehicles, Murder Weapons:abandon',
+  'Paper Towels':'dis.tool@Vehicles, Murder Weapons:abandon',
+  'Lye':'dis.use@Body Parts, Dead Bodies:bury',
+  'Bone Saw':'dis.tool@Dead Bodies:dissolve; oc@Cleared for Takeoff',
+  'Anchor':'dis.tool@Dead Bodies:sink','Brick':'dis.tool@Vehicles:sink',
+  'Office Chair':'crk.enh',
+  'CPU':'crk.part:MIPS','eCPU':'crk.part:MIPS','HPCPU':'crk.part:MIPS',
+  'Computer Fan':'crk.part:cooling','Water Block':'crk.part:cooling','Heat Sink':'crk.part:cooling',
+  'PSU':'crk.part:power; oc@Hostile Takeover',
+  'Magnifying Glass':'for.enh',
+  'Printer':"for.tool@Driver's License, Parking Permit, Concert Ticket, Collection Bucket, Diploma, Birth Certificate, Ordination Certificate, Prescription, Travel Visa, ID Badge, Medical License, Bank Check, Passport:everything except metalwork",
+  'Scissors':'for.tool:about half of all projects',
+  'Perforator':'for.tool@Concert Ticket, Bank Check',
+  'Fountain Pen':'for.tool@Birth Certificate, Diploma, Prescription, Bank Check',
+  'Typewriter':'for.tool@Birth Certificate, Prescription',
+  'Wax Seal Stamp':'for.tool@Birth Certificate',
+  'Embosser':'for.tool@License Plate, Travel Visa, Bank Check, Passport',
+  'Lump of Coal':'for.tool@License Plate',
+  'Permanent Marker':'for.tool@License Plate',
+  'Hand Drill':'for.tool@Skeleton Key, Police Badge, ATM Key, License Plate:all metalworking; oc@Guardian Angels, Break the Bank, Cleared for Takeoff',
+  'Hot Foil Stamper':'for.tool@Passport','Sewing Kit':'for.tool@Passport',
+  'Scalpel':'for.tool@ID Badge','Card Programmer':'for.tool@ID Badge',
+  'Graver':'for.tool@ID Badge, Police Badge, ATM Key',
+  'Grinding Stone':'for.tool@Police Badge','Thimble':'for.tool@ATM Key',
+  'Crucible':'for.tool@Skeleton Key, Police Badge, ATM Key',
+  'Polishing Pad':'for.tool@Skeleton Key, Police Badge, ATM Key',
+  'Sand':'for.tool@Skeleton Key, Police Badge, ATM Key:casting; ars.damp:skill 60',
+  'Toner':"for.mat@Driver's License, Parking Permit, Concert Ticket, Collection Bucket, Diploma, Birth Certificate, Ordination Certificate, Prescription, Travel Visa, ID Badge, Medical License, Bank Check, Passport:100 prints",
+  'Bond Paper':'for.mat@Diploma, Birth Certificate, License Plate, Ordination Certificate, Prescription, Travel Visa, Bank Check, Passport:100 sheets',
+  'Adhesive Plastic':"for.mat@Driver's License, Parking Permit, Travel Visa, Passport:100 sheets",
+  'PVC Cards':"for.mat@Driver's License, ID Badge:100 cards",
+  'Cardstock':'for.mat@Parking Permit, Concert Ticket, Passport:100 sheets',
+  'Inkwell':'for.mat@Birth Certificate, Diploma, Prescription, Bank Check:100 uses',
+  'Glue':'for.mat@Diploma, ID Badge, Passport:5 uses',
+  'Blowtorch':'for.mat@Police Badge, ATM Key:4 uses',
+  'Crushed Enamel':'for.mat@Police Badge:25 uses',
+  'Brass Ingot':'for.mat@Skeleton Key, Police Badge, ATM Key:single use',
+  'Aluminum Plate':'for.mat@License Plate:single use',
+  'Bank Statement':'for.mat@Bank Check:single use','Bonded Latex':'for.mat@Passport:single use',
+  'Candle':'for.mat@Birth Certificate:single use','Certificate Seal':'for.mat@Diploma:single use',
+  'Glow Stick':'for.mat@Travel Visa:single use','Lanyard':'for.mat@ID Badge:single use',
+  'Medical Bill':'for.mat@Prescription:single use',
+  'Picture Frame':'for.mat@Ordination Certificate',
+  'Birthday Wrapping Paper':'for.mat@Medical License',
+  "Driver's License":'for.out','Parking Permit':'for.out','Concert Ticket':'for.out',
+  'Collection Bucket':'for.out','Diploma':'for.out','Birth Certificate':'for.out',
+  'License Plate':'for.out','Ordination Certificate':'for.out','Prescription':'for.out',
+  'Medical License':'for.out','Travel Visa':'for.out','Bank Check':'for.out','Passport':'for.out',
+  'ID Badge':'for.out; oc@Cash Me If You Can, Gaslight the Way, Stacking the Deck, Ace in the Hole',
+  'ATM Key':'for.out; oc@Cash Me If You Can',
+  'Police Badge':'for.out; for.tool@Police Badge:mould; oc@Best of the Lot, Leave No Trace',
+  'Ergonomic Keyboard':'scm.enh',
+  'Windproof Lighter':'ars.enh','Lighter':'ars.ign',
+  'Molotov Cocktail':'ars.ign:consumed, skill 30','Flamethrower':'ars.ign:skill 80',
+  'Diesel':'ars.acc:skill 15','Kerosene':'ars.acc:skill 40',
+  'Potassium Nitrate':'ars.acc:skill 10','Magnesium Shavings':'ars.acc:skill 20',
+  'Thermite':'ars.acc:skill 50; oc@Dish It Out, Gone Fission',
+  'Oxygen Tank':'ars.acc:skill 5','Methane Tank':'ars.acc:skill 25','Hydrogen Tank':'ars.acc:skill 70',
+  'Blanket':'ars.damp','Fire Extinguisher':'ars.damp:skill 90',
+  'Shaving Foam':'oc@First Aid and Abet','Net':'oc@Pet Project','Dog Treats':'oc@Pet Project',
+  'Cassock':'oc@Thou Shalt Not Steal','Cell Phone':'oc@Thou Shalt Not Steal',
+  'DSLR Camera':'oc@Smoke and Wing Mirrors, Gone Fission','RF Detector':'oc@Smoke and Wing Mirrors',
+  'Construction Helmet':'oc@Gaslight the Way','PCP':'oc@Snow Blind',
+  'Blank Casino Chips':'oc@Plucking the Lotus Petal','Binoculars':'oc@Stage Fright, Crane Reaction',
+  'Billfold':'oc@Honey Trap',
+  'Zip Ties':'oc@Counter Offer, Blast from the Past, Break the Bank, Manifest Cruelty, Gone Fission',
+  'Polymorphic Virus':'oc@Counter Offer','Bolt Cutters':'oc@No Reserve, Dish It Out',
+  'Chloroform':'oc@No Reserve, Clinical Precision',
+  'C4 Explosive':'oc@Bidding War, Gone Fission','Flash Grenade':'oc@Bidding War',
+  'Dental Mirror':'oc@Bidding War','Ipecac Syrup':'oc@Dish It Out',
+  'Wireless Dongle':'oc@Sneaky Git Grab','Tunneling Virus':'oc@Sneaky Git Grab, Hostile Takeover',
+  'Core Drill':'oc@Blast from the Past','Shaped Charge':'oc@Blast from the Past, Crane Reaction',
+  'Firewalk Virus':'oc@Blast from the Past','Angle Grinder':'oc@Window of Opportunity',
+  'Razor Wire':'oc@Window of Opportunity','Floor Cleaner':'oc@Window of Opportunity',
+  'Large Suitcase':'oc@Cleared for Takeoff','Tracking Device':'oc@Cleared for Takeoff',
+  'Blood Bag : Irradiated':'oc@Clinical Precision','Syringe':'oc@Clinical Precision',
+  'Smoke Grenade':'oc@Stacking the Deck','Stealth Virus':'oc@Stacking the Deck, Manifest Cruelty',
+  'Ecstasy':'oc@Lock Stock','Lubricant':'oc@Lock Stock','Armored Virus':'oc@Lock Stock',
+  'Cigar Cutter':'oc@Manifest Cruelty','Car Battery':'oc@Manifest Cruelty',
+  'Hard Drive':'oc@Hostile Takeover','Igniter Cord':'oc@Hostile Takeover',
+  'Nail Bomb':'oc@Hostile Takeover','China Lake':'oc@Hostile Takeover',
+  'Remote Detonator':'oc@Crane Reaction','Tear Gas':'oc@Crane Reaction'
+};
+const ALIASES = {
+  'Pair of Glasses':'Glasses','Blank DVDs':'Blank DVD','High-Speed DVD Drive':'High-Speed Drive',
+  'Spray Paint':'Spray Can','Wirecutters':'Wire Cutters','Gas Can':'Gasoline',
+  'Bonesaw':'Bone Saw','Bricks':'Brick','Drill':'Hand Drill',
+  'Drivers License':"Driver's License",'ECPU':'eCPU'
+};
+
+const nkey = s => String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+const splitList = s => s.split(',').map(x=>x.trim()).filter(Boolean);
+function parseSpec(spec){
+  return spec.split(';').map(s=>s.trim()).filter(Boolean).map(s=>{
+    let note='',subs=[];
+    const ci=s.indexOf(':'); if(ci>=0){note=s.slice(ci+1).trim();s=s.slice(0,ci);}
+    const ai=s.indexOf('@'); if(ai>=0){subs=splitList(s.slice(ai+1));s=s.slice(0,ai);}
+    const [crime,roleRaw]=s.trim().split('.');
+    const role=crime==='oc'?'oc':(roleRaw||'tool');
+    return {crime,role,note,subs};
+  });
+}
+const DB={}, DB_KEYS={}, ALIAS_KEYS={};
+for(const [name,spec] of Object.entries(ITEM_USES)){DB[name]=parseSpec(spec);DB_KEYS[nkey(name)]=name;}
+for(const [alias,name] of Object.entries(ALIASES)) ALIAS_KEYS[nkey(alias)]=name;
+const BY_CRIME={};
+for(const code of Object.keys(CRIMES)) BY_CRIME[code]={general:[],subs:{},outputs:[]};
+for(const [item,uses] of Object.entries(DB)){
+  for(const u of uses){
+    const row={item,role:u.role,note:u.note};
+    const b=BY_CRIME[u.crime]; if(!b) continue;
+    if(u.role==='out'){b.outputs.push(row);continue;}
+    if(!u.subs.length){b.general.push(row);continue;}
+    for(const s of u.subs)(b.subs[s]=b.subs[s]||[]).push(row);
+  }
+}
+const stripQty=s=>String(s).replace(/^\s*x\s*[\d,]+\s+/i,'').replace(/\s*x\s*[\d,]+\s*$/i,'').trim();
+const baseName=s=>String(s).split(' : ')[0].trim();
+const canonical=name=>{const k=nkey(name);return DB_KEYS[k]||ALIAS_KEYS[k]||null;};
+function usesFor(rawName){
+  const name=stripQty(rawName),out=[],seen=new Set();
+  const add=c=>{if(c&&!seen.has(c)){seen.add(c);out.push(...DB[c]);}};
+  add(canonical(name));
+  const base=baseName(name);
+  if(base!==name)add(canonical(base));
+  return out;
+}
+function badgeFor(uses){
+  const crimes=[...new Set(uses.filter(u=>u.crime!=='oc').map(u=>u.crime))];
+  const hasOc=uses.some(u=>u.crime==='oc');
+  const names=crimes.map(c=>CRIMES[c]); if(hasOc)names.push('OC');
+  const kind=hasOc&&crimes.length?'both':hasOc?'oc':'crime';
+  return {text:names.join(', '),kind};
+}
+function describeUses(uses){
+  return uses.map(u=>{
+    if(u.crime==='oc')return 'OC: '+u.subs.join(', ');
+    let s=`${CRIMES[u.crime]}: ${ROLES[u.role]||u.role}`;
+    if(u.subs.length)s+=' for '+u.subs.join(', ');
+    if(u.note)s+=` (${u.note})`;
+    return s;
+  });
+}
+
+
+    // ===== HTML escape helper (module scope) =====
+    function escHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    // ===== Crimes panel state (module scope so it persists across opens) =====
+    let _crimeSel = null;
+    let _crimeFilter = 'all';
+    let _crimeMissingOnly = false;
+    let _crimeSearch = '';
+
+    function crimeQtyByName() {
+        const combined = getCombinedMap();
+        const byName = new Map();
+        combined.forEach(info => {
+            const k = nkey(stripQty(info.name));
+            byName.set(k, (byName.get(k) || 0) + info.amount);
+            const base = nkey(baseName(info.name));
+            if (base !== k) byName.set(base, (byName.get(base) || 0) + info.amount);
+        });
+        return byName;
+    }
+    function crimeQty(name, idx) {
+        return idx.get(nkey(stripQty(name))) || 0;
+    }
+    function crimeState(name, idx) {
+        return crimeQty(name, idx) > 0 ? 'owned' : 'missing';
+    }
+    function crimeItemId(name) {
+        const combined = getCombinedMap();
+        const k = nkey(stripQty(name));
+        for (const info of combined.values()) {
+            if (nkey(info.name) === k) return info.id;
+            if (nkey(baseName(info.name)) === k) return info.id;
+        }
+        return null;
+    }
+
+    function openCrimesPanel() {
+        if (document.getElementById('torn-inv-crimes-modal')) return;
+        const overlay = buildOverlay('torn-inv-crimes-modal');
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background:#1e1e1e; border:1px solid #444; border-radius:8px;
+            width:820px; max-width:94vw; height:84vh; display:flex; flex-direction:column;
+            box-shadow:0 8px 30px rgba(0,0,0,0.7);
+        `;
+        modal.innerHTML = `
+            <div style="padding:12px 16px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+                <strong style="color:#ff9900; font-size:14px;">🧩 Crime & OC Items</strong>
+                <span id="torn-crime-close" style="cursor:pointer;color:#888;font-size:16px;">✕</span>
+            </div>
+            <div style="padding:8px 16px; background:#252525; border-bottom:1px solid #333; display:flex; gap:8px; align-items:center; font-size:12px;">
+                <input id="torn-crime-search" type="text" placeholder="Search all crime items…"
+                    style="flex:1;padding:5px 8px;background:#2a2a2a;border:1px solid #444;border-radius:4px;color:#eee;font-size:12px;">
+                <label style="display:flex;align-items:center;gap:4px;color:#bbb;cursor:pointer;">
+                    <input id="torn-crime-missing" type="checkbox" ${_crimeMissingOnly ? 'checked' : ''}> Missing only
+                </label>
+            </div>
+            <div id="torn-crime-body" style="overflow-y:auto;padding:12px 16px;font-size:12px;flex:1;"></div>
+        `;
+        overlay.appendChild(modal);
+
+        const searchEl = document.getElementById('torn-crime-search');
+        const missingEl = document.getElementById('torn-crime-missing');
+        if (searchEl) {
+            searchEl.value = _crimeSearch;
+            searchEl.addEventListener('input', (e) => {
+                _crimeSearch = e.target.value;
+                renderCrimes(modal);
+            });
+        }
+        if (missingEl) {
+            missingEl.addEventListener('change', (e) => {
+                _crimeMissingOnly = e.target.checked;
+                renderCrimes(modal);
+            });
+        }
+        const closeEl = modal.querySelector('#torn-crime-close');
+        if (closeEl) closeEl.onclick = () => overlay.remove();
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+        renderCrimes(modal);
+    }
+
+    function sortCrimeRows(rows, idx) {
+        const SO = { missing: 0, unknown: 1, owned: 2 };
+        return rows.slice().sort((a, b) =>
+            (SO[crimeState(a.item, idx)] || 1) - (SO[crimeState(b.item, idx)] || 1) ||
+            ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) ||
+            a.item.localeCompare(b.item));
+    }
+
+    function crimeCards(code) {
+        const b = BY_CRIME[code], cards = [];
+        if (!b) return cards;
+        if (b.general.length) cards.push({ title: 'General', rows: b.general, general: true });
+        for (const s of Object.keys(b.subs).sort((x, y) => x.localeCompare(y))) {
+            const tools = b.subs[s].filter(r => r.role === 'tool');
+            const mats  = b.subs[s].filter(r => r.role === 'mat');
+            const rest  = b.subs[s].filter(r => r.role !== 'tool' && r.role !== 'mat');
+            if (tools.length) cards.push({ title: s, rows: tools, type: 'tool' });
+            if (mats.length)  cards.push({ title: s, rows: mats,  type: 'mat' });
+            if (rest.length)  cards.push({ title: s, rows: rest,  type: 'other' });
+        }
+        if (b.outputs.length) cards.push({ title: 'Forged items you hold', rows: b.outputs, outputs: true, type: 'out' });
+        return cards;
+    }
+
+    function crimeStatLine(code, idx) {
+        const seen = new Set(); let miss = 0, tot = 0;
+        for (const c of crimeCards(code)) {
+            if (c.outputs) continue;
+            for (const r of c.rows) {
+                if (seen.has(r.item)) continue;
+                seen.add(r.item); tot++;
+                if (crimeState(r.item, idx) === 'missing') miss++;
+            }
+        }
+        return { miss, tot };
+    }
+
+    function renderCrimes(modal) {
+        const body = modal.querySelector('#torn-crime-body');
+        if (!body) return;
+        const idx = crimeQtyByName();
+        const q = _crimeSearch.trim().toLowerCase();
+        let html = '';
+
+        if (q) {
+            const names = Object.keys(DB).filter(n => n.toLowerCase().includes(q)).sort((a, b) => a.localeCompare(b));
+            const rows = sortCrimeRows(names.map(n => ({
+                item: n,
+                role: (DB[n] && DB[n][0]) ? DB[n][0].role : 'tool',
+                note: ''
+            })), idx);
+            html = rows.length
+                ? `<div style="display:flex;flex-direction:column;gap:2px;">${rows.map(r => crimeRowHtml(r, idx, true)).join('')}</div>`
+                : `<div style="padding:20px;color:#888;text-align:center;">No crime items match "${escHtml(_crimeSearch)}"</div>`;
+            body.innerHTML = html;
+            return;
+        }
+
+        if (!_crimeSel) {
+            const cards = Object.keys(CRIMES).map(code => {
+                const s = crimeStatLine(code, idx);
+                const badge = s.miss
+                    ? `<span style="position:absolute;top:6px;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#7a3a3a;color:#fff;font-size:10px;font-weight:bold;display:flex;align-items:center;justify-content:center;">${s.miss}</span>`
+                    : `<span style="position:absolute;top:6px;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#3c5a3c;color:#fff;font-size:10px;font-weight:bold;display:flex;align-items:center;justify-content:center;">✓</span>`;
+                return `<div class="torn-crime-tile" data-code="${code}" style="position:relative;border:1px solid #333;border-radius:6px;background:#242424;padding:16px 6px 12px;text-align:center;cursor:pointer;color:#b5b5b5;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:11px;transition:background .15s,border-color .15s;">
+                    ${badge}<span style="font-size:20px;">🧩</span><span>${escHtml(CRIMES[code])}</span></div>`;
+            }).join('');
+            html = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">${cards}</div>`;
+        } else {
+            const s = crimeStatLine(_crimeSel, idx);
+            let cards = crimeCards(_crimeSel);
+            if (_crimeFilter === 'tool') cards = cards.filter(c => c.type === 'tool');
+            if (_crimeFilter === 'mat')  cards = cards.filter(c => c.type === 'mat');
+            const cardsHtml = cards.map(c => crimeCardHtml(c, idx)).filter(Boolean).join('');
+            html = `
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <button class="torn-crime-back" style="background:#2c2c2c;color:#d8d8d8;border:1px solid #3c3c3c;border-radius:4px;padding:4px 10px;cursor:pointer;">← All crimes</button>
+                    <strong style="color:#ff9900;">${escHtml(CRIMES[_crimeSel] || '')}</strong>
+                    <span style="margin-left:auto;color:#888;font-size:11px;">${s.miss ? s.miss + ' of ' + s.tot + ' missing' : s.tot + ' items, none missing'}</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:14px;">
+                    ${[['all', 'All'], ['tool', 'Tools'], ['mat', 'Materials']].map(([v, l]) =>
+                        `<button class="torn-crime-filter" data-v="${v}" style="background:${_crimeFilter === v ? '#3a3a3a' : '#262626'};color:${_crimeFilter === v ? '#fff' : '#9a9a9a'};border:1px solid #3c3c3c;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:11px;">${l}</button>`
+                    ).join('')}
+                </div>
+                ${cardsHtml || `<div style="padding:20px;color:#888;text-align:center;">Nothing missing for ${escHtml(CRIMES[_crimeSel] || '')}</div>`}`;
+        }
+        body.innerHTML = html;
+
+        body.querySelectorAll('.torn-crime-tile').forEach(t => {
+            t.onclick = () => { _crimeSel = t.dataset.code; _crimeFilter = 'all'; renderCrimes(modal); };
+            t.onmouseenter = () => { t.style.background = '#2c2c2c'; t.style.borderColor = '#ff9900'; };
+            t.onmouseleave = () => { t.style.background = '#242424'; t.style.borderColor = '#333'; };
+        });
+        const back = body.querySelector('.torn-crime-back');
+        if (back) back.onclick = () => { _crimeSel = null; _crimeFilter = 'all'; renderCrimes(modal); };
+        body.querySelectorAll('.torn-crime-filter').forEach(b => {
+            b.onclick = () => { _crimeFilter = b.dataset.v; renderCrimes(modal); };
+        });
+    }
+
+    function crimeRowHtml(r, idx, showCrime) {
+        const qty = crimeQty(r.item, idx);
+        const dot = qty > 0 ? '#7fae7f' : '#c96b6b';
+        const meta = showCrime
+            ? describeUses(DB[r.item]).join(' · ')
+            : [ROLES[r.role] || r.role, r.note].filter(Boolean).join(', ');
+        const id = crimeItemId(r.item);
+        const basket = id
+            ? `<a href="https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=${id}" target="_blank" rel="noopener" title="Open on Item Market" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:24px;border-radius:4px;color:#d0d0d0;background:#2e2e2e;border:1px solid #444;text-decoration:none;">🛒</a>`
+            : `<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:24px;border-radius:4px;color:#555;background:#202020;border:1px solid #2e2e2e;">🛒</span>`;
+        return `<div style="display:grid;grid-template-columns:8px 1fr auto 26px;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #262626;">
+            <span style="width:7px;height:7px;border-radius:50%;background:${dot};"></span>
+            <span><span style="color:#e0e0e0;">${escHtml(r.item)}</span>${meta ? `<span style="display:block;color:#7f7f7f;font-size:10.5px;margin-top:2px;">${escHtml(meta)}</span>` : ''}</span>
+            <span style="font-weight:bold;min-width:26px;text-align:right;color:${qty > 0 ? '#93b893' : '#d98b8b'};">${qty ? qty : ''}</span>
+            ${basket}
+        </div>`;
+    }
+
+    function crimeCardHtml(card, idx) {
+        const rows = sortCrimeRows(card.rows, idx);
+        const missing = card.outputs ? 0 : rows.filter(r => crimeState(r.item, idx) === 'missing').length;
+        const shown = _crimeMissingOnly ? rows.filter(r => crimeState(r.item, idx) !== 'owned') : rows;
+        if (!shown.length) return '';
+        let stHtml;
+        if (card.outputs) {
+            stHtml = `<span style="color:#9a9a9a;font-size:11px;">${rows.filter(r => crimeState(r.item, idx) === 'owned').length}/${rows.length} held</span>`;
+        } else if (missing) {
+            stHtml = `<span style="color:#e09a9a;font-size:11px;">${missing} missing</span>`;
+        } else {
+            stHtml = `<span style="color:#93b893;font-size:11px;">complete</span>`;
+        }
+        const isOpen = (missing > 0 || _crimeMissingOnly) ? 'open' : '';
+        return `<details ${isOpen} style="background:#161616;border:1px solid #383838;border-radius:6px;margin-bottom:10px;overflow:hidden;">
+            <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 12px;color:#f0f0f0;font-weight:bold;font-size:12.5px;background:#2b2b2b;border-bottom:1px solid #383838;">
+                <span style="flex:1;">${escHtml(card.title)}${card.general ? '<span style="display:block;font-weight:normal;font-size:10.5px;color:#8a8a8a;margin-top:1px;">applies to every sub-crime</span>' : ''}</span>
+                ${stHtml}<span style="color:#777;font-size:10px;">▼</span>
+            </summary>
+            ${shown.map(r => crimeRowHtml(r, idx)).join('')}
+        </details>`;
+    }
+
 
     const getApiKey = () => GM_getValue(API_KEY_STORAGE, '');
     const setApiKey = (k) => GM_setValue(API_KEY_STORAGE, k.trim());
@@ -170,7 +586,6 @@
         if (old) old.remove();
         try {
             createControlPanel();
-            alert('Panel shown.');
         } catch (e) {
             console.error('[Torn Inv] showPanel error:', e);
             alert('Failed to show panel: ' + e.message);
@@ -240,6 +655,7 @@
                         <button id="torn-inv-watch"    style="flex:1;padding:6px 10px;background:#444;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:11px;">⭐ Watchlist</button>
                         <button id="torn-inv-key"      style="flex:1;padding:6px 10px;background:#444;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:11px;">🔑 Key</button>
                         <button id="torn-inv-settings" style="flex:1;padding:6px 10px;background:#444;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:11px;">⚙️ Settings</button>
+                        <button id="torn-inv-crimes"   style="flex:1;padding:6px 10px;background:#5a3a00;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:11px;">🧩 Crimes</button>
                         <button id="torn-inv-clear"    style="flex:1;padding:6px 10px;background:#662222;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:11px;">🗑️ Clear</button>
                     </div>
                 </div>
@@ -256,6 +672,7 @@
             const keyEl = document.getElementById('torn-inv-key');
             const settingsEl = document.getElementById('torn-inv-settings');
             const clearEl = document.getElementById('torn-inv-clear');
+            const crimesEl = document.getElementById('torn-inv-crimes');
             const headerEl = document.getElementById('torn-inv-header');
 
             if (closeEl) closeEl.onclick = (e) => { e.stopPropagation(); hidePanel(); };
@@ -270,6 +687,7 @@
             if (watchEl) watchEl.onclick = openWatchlistPanel;
             if (keyEl) keyEl.onclick = promptForApiKey;
             if (settingsEl) settingsEl.onclick = openSettingsPanel;
+            if (crimesEl) crimesEl.onclick = openCrimesPanel;
             if (clearEl) clearEl.onclick = clearInventoryList;
 
             if (headerEl) makeDraggable(panel, headerEl);
@@ -278,32 +696,49 @@
         console.log('[Torn Inv] Panel rendered (collapsed:', collapsed, ')');
     }
 
-    function makeDraggable(panel, handle) {
-        let dragging = false, sx, sy, sr, sb;
-        handle.addEventListener('mousedown', (e) => {
-            if (e.target.id === 'torn-inv-collapse' || e.target.id === 'torn-inv-close') return;
-            dragging = true; sx = e.clientX; sy = e.clientY;
-            const r = panel.getBoundingClientRect();
-            sr = window.innerWidth - r.right; sb = window.innerHeight - r.bottom;
-            document.documentElement.style.userSelect = 'none';
-            e.preventDefault();
-        });
+    let _dragState = null; // { panel, sx, sy, sr, sb }
+    let _dragDocListenersAdded = false;
+
+    function ensureDragDocListeners() {
+        if (_dragDocListenersAdded) return;
+        _dragDocListenersAdded = true;
         document.addEventListener('mousemove', (e) => {
-            if (!dragging) return;
+            if (!_dragState) return;
+            const { panel, sx, sy, sr, sb } = _dragState;
             const dx = e.clientX - sx, dy = e.clientY - sy;
             const r = panel.getBoundingClientRect();
             const nr = Math.max(8, Math.min(sr - dx, window.innerWidth - r.width - 8));
             const nb = Math.max(8, Math.min(sb - dy, window.innerHeight - r.height - 8));
-            panel.style.right = nr + 'px'; panel.style.bottom = nb + 'px';
-            panel.style.left = 'auto'; panel.style.top = 'auto';
+            panel.style.right = nr + 'px';
+            panel.style.bottom = nb + 'px';
+            panel.style.left = 'auto';
+            panel.style.top = 'auto';
         });
         document.addEventListener('mouseup', () => {
-            if (!dragging) return;
-            dragging = false;
+            if (!_dragState) return;
+            const { panel } = _dragState;
+            _dragState = null;
             document.documentElement.style.userSelect = '';
             const r = panel.getBoundingClientRect();
             savePanelPos({ right: window.innerWidth - r.right, bottom: window.innerHeight - r.bottom });
         });
+    }
+
+    function makeDraggable(panel, handle) {
+        handle.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'torn-inv-collapse' || e.target.id === 'torn-inv-close') return;
+            const r = panel.getBoundingClientRect();
+            _dragState = {
+                panel,
+                sx: e.clientX,
+                sy: e.clientY,
+                sr: window.innerWidth - r.right,
+                sb: window.innerHeight - r.bottom
+            };
+            document.documentElement.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        ensureDragDocListeners();
     }
 
     function updateStatus(msg, color = '#aaa') {
@@ -312,6 +747,7 @@
     }
 
     let isRefreshing = false, lastRefreshTime = 0;
+    let isDcRefreshing = false, lastDcRefreshTime = 0;
 
     function fetchCategory(categoryString, offset = 0) {
         return new Promise((resolve, reject) => {
@@ -348,6 +784,76 @@
             }
         }
         return { data: null, items: [], usedVariant: categoryObj.variants[0], attempts: categoryObj.variants.length };
+    }
+
+    /**
+     * Fetch the user's display case via the Torn v2 API (`/user/display`).
+     * Returns a normalized array of { id, name, amount } so the rest of the
+     * snapshot pipeline can consume it unchanged. Handles several known
+     * response shapes the API has shipped over time.
+     */
+    function fetchDisplayCaseFromAPI() {
+        return new Promise((resolve, reject) => {
+            const key = getApiKey();
+            if (!key) return reject(new Error('No API key set.'));
+            const url = `${API_BASE}/user/display?key=${key}`;
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url,
+                headers: { accept: 'application/json' },
+                onload: (res) => {
+                    if (res.status === 200) {
+                        let data;
+                        try { data = JSON.parse(res.responseText); }
+                        catch (e) { return reject(new Error('Bad JSON: ' + e.message)); }
+
+                        // API-level error block (e.g. { error: { code, error } })
+                        if (data && data.error) {
+                            const msg = (data.error.error || data.error.message || 'API error');
+                            return reject(new Error(msg));
+                        }
+
+                        // The display endpoint returns items in any of these
+                        // shapes — be tolerant so we keep working if Torn tweaks it.
+                        let rawItems = null;
+                        if (data && Array.isArray(data.display)) rawItems = data.display;
+                        else if (data && data.display && Array.isArray(data.display.items)) rawItems = data.display.items;
+                        else if (data && Array.isArray(data.items)) rawItems = data.items;
+                        else if (data && data.displayCase && Array.isArray(data.displayCase.items)) rawItems = data.displayCase.items;
+
+                        if (!Array.isArray(rawItems)) {
+                            return reject(new Error('Unexpected /user/display response shape'));
+                        }
+
+                        const out = [];
+                        const seen = new Map(); // id -> index in out (for quantity aggregation)
+                        for (const it of rawItems) {
+                            if (!it || it.id == null) continue;
+                            const id = Number(it.id);
+                            if (!Number.isFinite(id)) continue;
+                            // Field name for quantity has varied: quantity / qty / amount / count
+                            const amount = Number(it.quantity != null ? it.quantity :
+                                                  it.qty     != null ? it.qty :
+                                                  it.amount  != null ? it.amount :
+                                                  it.count   != null ? it.count : 1) || 1;
+                            const name = (it.name || it.itemName || `Item #${id}`).toString();
+                            const existing = seen.get(id);
+                            if (existing != null) {
+                                out[existing].amount += amount;
+                            } else {
+                                seen.set(id, out.length);
+                                out.push({ id, name, amount });
+                            }
+                        }
+                        resolve(out);
+                    } else if (res.status === 429) reject(new Error('Rate limited.'));
+                    else if (res.status === 401 || res.status === 403) reject(new Error('Invalid key.'));
+                    else reject(new Error('HTTP ' + res.status));
+                },
+                onerror: (e) => reject(new Error('Network: ' + (e && e.message ? e.message : 'unknown'))),
+                ontimeout: () => reject(new Error('Request timed out.'))
+            });
+        });
     }
 
     function scrapeDisplayCaseFromPage() {
@@ -590,7 +1096,15 @@
 
         try {
             const { items, requestCount } = await fetchInventoryOnly();
-            if (!items || items.length === 0) throw new Error('API returned 0 items — old data preserved');
+            if (!items) throw new Error('API returned no data — old data preserved');
+            if (items.length === 0) {
+                saveInventorySnapshot(items);
+                lastRefreshTime = Date.now();
+                updateStatus('⚠️ Inventory empty (0 items) — saved anyway', '#ffaa00');
+                clearHighlights();
+                highlightMarketplaceItems();
+                return;
+            }
             saveInventorySnapshot(items);
             lastRefreshTime = Date.now();
 
@@ -610,30 +1124,81 @@
         }
     }
 
-    function pullDisplayCase() {
-        if (!/displaycase\.php/i.test(window.location.href)) {
-            updateStatus('❌ Open displaycase.php first', '#ff4444');
-            alert('You must be on your Display Case page (displaycase.php) to pull it.\n\nNavigate to https://www.torn.com/displaycase.php and try again.');
+    async function pullDisplayCase() {
+        // Guard against double-clicks / spamming the API.
+        if (isDcRefreshing) {
+            return updateStatus('⏳ Display case fetch already running…', '#ffaa00');
+        }
+        const elapsed = Date.now() - lastDcRefreshTime;
+        if (elapsed < REFRESH_COOLDOWN_MS) {
+            const s = Math.ceil((REFRESH_COOLDOWN_MS - elapsed) / 1000);
+            return updateStatus(`⏳ Cooldown: ${s}s remaining`, '#ffaa00');
+        }
+        if (!getApiKey()) {
+            updateStatus('❌ No API key.', '#ff4444');
+            alert('No Torn API key set.\n\nClick 🔑 Key in the panel to add one (a READ-ONLY key with at least "User Display" access).');
             return;
         }
 
-        updateStatus('🏛️ Scanning display case…', '#ff9900');
+        isDcRefreshing = true;
+        updateStatus('🏛️ Fetching display case via API…', '#ff9900');
 
-        const dcItems = scrapeDisplayCaseFromPage();
-        if (dcItems.length === 0) {
-            updateStatus('⚠️ No items found — check selectors', '#ffaa00');
-            alert('No display case items found on this page.\n\nTorn may have changed their page structure. Open the browser console (F12) and check the "[Torn Inv]" logs for what was detected.');
-            return;
+        let dcItems = [];
+        let usedFallback = false;
+        try {
+            dcItems = await fetchDisplayCaseFromAPI();
+            if (!dcItems.length) {
+                updateStatus('⚠️ Display case is empty', '#ffaa00');
+                // Still save the empty snapshot so the user knows it was pulled.
+                saveDisplayCaseSnapshot([]);
+                lastDcRefreshTime = Date.now();
+                clearHighlights();
+                highlightMarketplaceItems();
+                return;
+            }
+        } catch (e) {
+            console.warn('[Torn Inv] Display case API fetch failed:', e.message);
+            // Fall back to page scraping ONLY if the user is on displaycase.php.
+            if (/displaycase\.php/i.test(window.location.href)) {
+                updateStatus('⚠️ API failed — falling back to page scrape…', '#ffaa00');
+                try {
+                    dcItems = scrapeDisplayCaseFromPage();
+                    usedFallback = true;
+                } catch (scrapeErr) {
+                    console.error('[Torn Inv] Page scrape also failed:', scrapeErr);
+                    updateStatus(`❌ ${e.message} (fallback failed: ${scrapeErr.message})`, '#ff4444');
+                    alert(`Could not fetch the display case via API:\n  ${e.message}\n\n` +
+                          `A page-scrape fallback also failed:\n  ${scrapeErr.message}\n\n` +
+                          `Check that your API key has "User Display" access, or navigate to ` +
+                          `https://www.torn.com/displaycase.php and try again.`);
+                    return;
+                }
+                if (!dcItems.length) {
+                    updateStatus('⚠️ API failed and page scrape found nothing', '#ffaa00');
+                    alert(`Could not fetch the display case via API:\n  ${e.message}\n\n` +
+                          `The page scrape also found no items. Make sure you are actually on ` +
+                          `your display case page (displaycase.php) and that it is loaded.`);
+                    return;
+                }
+            } else {
+                updateStatus(`❌ API failed: ${e.message}`, '#ff4444');
+                alert(`Could not fetch the display case via API:\n  ${e.message}\n\n` +
+                      `Make sure your API key has "User Display" access.`);
+                return;
+            }
+        } finally {
+            isDcRefreshing = false;
         }
 
         saveDisplayCaseSnapshot(dcItems);
+        lastDcRefreshTime = Date.now();
         const dcSnap = loadDisplayCaseSnapshot();
         const dcCount = dcSnap ? Object.keys(dcSnap.itemMap).length : 0;
 
-        updateStatus(`✅ Display Case: ${dcCount} items`, '#44ff44');
+        updateStatus(`✅ Display Case: ${dcCount} items${usedFallback ? ' (page scrape)' : ''}`, '#44ff44');
         clearHighlights();
         highlightMarketplaceItems();
-        console.log(`[Torn Inv] Display case saved: ${dcItems.length} items`);
+        console.log(`[Torn Inv] Display case saved: ${dcItems.length} items${usedFallback ? ' (fallback: page scrape)' : ''}`);
     }
 
     function clearInventoryList() {
@@ -775,8 +1340,8 @@
                 row.style.cssText = 'display:grid;grid-template-columns:16px 1fr 110px 70px 70px 60px;gap:8px;padding:4px 0;border-bottom:1px solid #2a2a2a;align-items:center;';
                 row.innerHTML = `
                     <div style="width:10px;height:10px;border-radius:50%;background:${dot};" title="${bucket}"></div>
-                    <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${info.name} (id ${info.id})">${info.name}</div>
-                    <div style="color:#888;font-size:11px;">${info.category || ''}</div>
+                    <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(info.name)} (id ${info.id})">${escHtml(info.name)}</div>
+                    <div style="color:#888;font-size:11px;">${escHtml(info.category || '')}</div>
                     <div style="color:#9cf;text-align:right;">${info.invAmount}</div>
                     <div style="color:#fc9;text-align:right;">${info.dcAmount}</div>
                     <div style="color:#ddd;text-align:right;font-weight:bold;">${info.amount}</div>
@@ -848,7 +1413,7 @@
                 const row = document.createElement('div');
                 row.style.cssText = 'display:grid;grid-template-columns:1fr 100px 70px;gap:8px;padding:5px 0;border-bottom:1px solid #2a2a2a;align-items:center;';
                 row.innerHTML = `
-                    <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${entry.name}">${entry.name}</div>
+                    <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(entry.name)}">${escHtml(entry.name)}</div>
                     <div style="color:#ddd;">$${entry.price.toLocaleString()}</div>
                     <div style="text-align:right;">
                         <button data-idx="${idx}" style="padding:3px 8px;background:#662222;border:none;border-radius:3px;color:#fff;cursor:pointer;font-size:11px;">✕</button>
@@ -986,7 +1551,7 @@
                     const row = document.createElement('div');
                     row.style.cssText = 'display:grid;grid-template-columns:1fr 80px 80px 80px 80px 60px;gap:8px;padding:4px 0;border-bottom:1px solid #2a2a2a;align-items:center;';
                     row.innerHTML = `
-                        <div title="id ${id}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${info.name}</div>
+                        <div title="id ${id}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(info.name)}</div>
                         <input data-id="${id}" data-key="red"    type="number" min="0" value="${cur.red}"    style="width:100%;background:#2a2a2a;border:1px solid #444;color:#eee;border-radius:3px;padding:3px 6px;">
                         <input data-id="${id}" data-key="yellow" type="number" min="0" value="${cur.yellow}" style="width:100%;background:#2a2a2a;border:1px solid #444;color:#eee;border-radius:3px;padding:3px 6px;">
                         <input data-id="${id}" data-key="green"  type="number" min="0" value="${cur.green}"  style="width:100%;background:#2a2a2a;border:1px solid #444;color:#eee;border-radius:3px;padding:3px 6px;">
@@ -1279,6 +1844,7 @@
             GM_registerMenuCommand('🏛️ Pull Display Case', pullDisplayCase);
             GM_registerMenuCommand('🗑️ Clear Inventory List', clearInventoryList);
             GM_registerMenuCommand('⭐ Open Watchlist', openWatchlistPanel);
+            GM_registerMenuCommand('🧩 Open Crimes Panel', openCrimesPanel);
             GM_registerMenuCommand('🔑 Set API Key', promptForApiKey);
             GM_registerMenuCommand('🛠️ Force Reset Panel', forceResetAll);
             GM_registerMenuCommand('📍 Reset Panel Position', resetPanelPosition);
@@ -1333,6 +1899,8 @@
         }
 
         startObserver();
+        try { highlightMarketplaceItems(); }
+        catch (e) { console.error('[Torn Inv] Initial highlight error:', e); }
     }
 
     registerMenuCommands();
