@@ -24,7 +24,7 @@ Automatically highlights item names across the Item Market and player bazaars ba
 Combines data from two sources to calculate your actual item ownership:
 
 - **Inventory:** Retrieved using the official Torn API.
-- **Display Case:** Retrieved directly from the Display Case page using DOM scraping.
+- **Display Case:** Retrieved using the official Torn API.
 
 Hover over a highlighted item to see its ownership breakdown.
 
@@ -105,7 +105,7 @@ The script is designed to minimize API consumption and stays comfortably below T
 | Action | API Requests | Description |
 |:---|:---:|:---|
 | 🔄 Inventory refresh | ~25–30 | Retrieves inventory data across item categories, including fallback sweeps. |
-| 🏛️ Display Case sync | 0 | Reads the currently loaded Display Case page using DOM scraping. |
+| 🏛️ Display Case sync | 0 | Reads the currently loaded Display Case page using API. |
 | Marketplace highlighting | 0 | Uses locally cached inventory and display case data. |
 | 💰 Price target alerts | 0 | Uses locally stored price targets. |
 | ⭐ Watchlist | 0 | Uses locally stored watchlist entries. |
@@ -174,7 +174,7 @@ Use a dedicated **read-only API key** with the minimum permissions required:
 | Script Type | Tampermonkey Userscript |
 | API | Official Torn API |
 | Inventory Data | Torn API |
-| Display Case Data | DOM Scraping |
+| Display Case Data | Torn API |
 | Local Storage | Tampermonkey `GM_setValue` |
 | Marketplace Detection | DOM Monitoring |
 | External Backend | Not required |
