@@ -15,7 +15,7 @@
 // ==/UserScript==
 
 /* =====================================================================
-* PC Version
+* PC Version 5.3
 * 
 * The Torn PDA app replaces the literal ###PDA-APIKEY### at install time
 * with the user's stored Torn API key (configured in PDA Settings ->
