@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Torn Inventory Tracker & Marketplace Highlighter
+// @name         Torn Inventory & Marketplace, Highlighter & Tracker
 // @namespace    http://torn.com/
-// @version      6.1
+// @version      5.3
 // @description  Highlight marketplace item names by owned amount and pulse prices based on custom values
-// @author       c0pyc4t  [4039125]
+// @author       c0pyc4t
 // @match        https://www.torn.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -13,6 +13,24 @@
 // @connect      api.torn.com
 // @run-at       document-end
 // ==/UserScript==
+
+/* =====================================================================
+* PC Version
+* 
+* The Torn PDA app replaces the literal ###PDA-APIKEY### at install time
+* with the user's stored Torn API key (configured in PDA Settings ->
+* Advanced -> API Key). This version has:
+* - No floating CAT button.
+* - No on-page control panel.
+* - No GM_registerMenuCommand entries.
+* The API key comes ONLY from PDA's placeholder. On first run the
+* resolved key is sent to /api/register; the returned token is stored
+* and reused on every subsequent load.
+* PDA supports GM_xmlhttpRequest / GM_setValue / GM_getValue /
+* GM_deleteValue (routed through PDA's native HTTP handlers, which also
+* bypass CORS for the @connect domains). Every GM_* call is still
+* feature-detected so the script also runs in a normal Tampermonkey host.
+* ===================================================================== */
 
 (function () {
     'use strict';
@@ -69,6 +87,7 @@
 
     const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
 
+    // ===== Crime DB (Systoned v1.5, verbatim) =====
 const CRIMES = {
   sfc:'Search for Cash', bl:'Bootlegging', grf:'Graffiti', sl:'Shoplifting',
   pp:'Pickpocketing', cs:'Card Skimming', bur:'Burglary', hus:'Hustling',
@@ -268,6 +287,7 @@ function describeUses(uses){
     let _crimeMissingOnly = false;
     let _crimeSearch = '';
 
+    // ===== Crimes panel functions (Systoned v1.5 logic, your theme) =====
     function crimeQtyByName() {
         const combined = getCombinedMap();
         const byName = new Map();
